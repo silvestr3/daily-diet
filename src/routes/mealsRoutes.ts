@@ -82,4 +82,91 @@ export async function mealsRoutes(app: FastifyInstance) {
       return { meal };
     }
   );
+
+  app.put(
+    "/:id",
+    {
+      preHandler: [checkUserIdExists],
+    },
+    async (request, reply) => {
+      const { user_id } = request.cookies;
+
+      const updateMealParamsSchema = z.object({
+        id: z.string(),
+      });
+
+      const updateMealBodySchema = z.object({
+        name: z.string().optional(),
+        description: z.string().optional(),
+        date: z.string().optional(),
+        time: z.string().optional(),
+        isOnDiet: z.boolean().optional(),
+      });
+
+      const { id } = updateMealParamsSchema.parse(request.params);
+      const bodyParams = updateMealBodySchema.parse(request.body);
+
+      const mealToUpdate = await knex("meals")
+        .where("id", id)
+        .select("user_id")
+        .first();
+
+      if (user_id !== mealToUpdate?.user_id) {
+        return reply.status(401).send({
+          error: "Unauthorized",
+        });
+      }
+
+      try {
+        await knex("meals")
+          .where("id", id)
+          .update({
+            ...bodyParams,
+          });
+      } catch (error) {
+        return reply.status(400).send({
+          error: `Error updating meal: ${error}`,
+        });
+      }
+
+      return reply.status(200).send();
+    }
+  );
+
+  app.delete(
+    "/:id",
+    {
+      preHandler: [checkUserIdExists],
+    },
+    async (request, reply) => {
+      const { user_id } = request.cookies;
+
+      const deleteMealParamsSchema = z.object({
+        id: z.string(),
+      });
+
+      const { id } = deleteMealParamsSchema.parse(request.params);
+
+      const mealToDelete = await knex("meals")
+        .where("id", id)
+        .select("user_id")
+        .first();
+
+      if (user_id !== mealToDelete?.user_id) {
+        return reply.status(401).send({
+          error: "Unauthorized",
+        });
+      }
+
+      try {
+        await knex("meals").where("id", id).del();
+      } catch (error) {
+        return reply.status(400).send({
+          error: `Error deleting meal: ${error}`,
+        });
+      }
+
+      return reply.status(204).send();
+    }
+  );
 }
