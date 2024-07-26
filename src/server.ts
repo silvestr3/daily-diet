@@ -1,10 +1,16 @@
 import fastify from "fastify";
 import { env } from "./env";
+import cookie from "@fastify/cookie";
+import { mealsRoutes } from "./routes/mealsRoutes";
+import { usersRoutes } from "./routes/usersRoutes";
 
 const app = fastify();
-
-app.get("/", () => {
-  return "Hello world";
+app.register(cookie);
+app.register(usersRoutes, {
+  prefix: "/users",
+});
+app.register(mealsRoutes, {
+  prefix: "/meals",
 });
 
 app
